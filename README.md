@@ -121,12 +121,110 @@ Or build the image and run directly:
 - If you get dependency or build errors, confirm you are using Python 3.13+ and that your virtual environment is active.
 - Use `pip install -e .` so the package metadata in `pyproject.toml` is used.
 
+## API Endpoints & Responses
+
+Here is the list of available API endpoints with their request formats and expected responses.
+
+### 1. Root Endpoint
+* **Path:** `/`
+* **Method:** `GET`
+* **Authentication:** None
+* **Response (Success - `200 OK`):**
+  ```json
+  {
+    "message": "Hello World"
+  }
+  ```
+
+### 2. User Sign Up
+* **Path:** `/signup`
+* **Method:** `POST`
+* **Authentication:** None
+* **Request Body (JSON):**
+  ```json
+  {
+    "name": "John Doe",
+    "email": "johndoe@example.com",
+    "password": "securepassword123"
+  }
+  ```
+* **Responses:**
+  * **Success (`200 OK`):**
+    ```json
+    {
+      "message": "user created successfully User(id=ObjectId('...'), name='John Doe', email='johndoe@example.com', password='...')"
+    }
+    ```
+  * **Failure (`400 Bad Request` - e.g., Email already exists):**
+    ```json
+    {
+      "detail": "Email already exists"
+    }
+    ```
+
+### 3. User Login
+* **Path:** `/login`
+* **Method:** `POST`
+* **Authentication:** None
+* **Request Body (JSON):**
+  ```json
+  {
+    "email": "johndoe@example.com",
+    "password": "securepassword123"
+  }
+  ```
+* **Responses:**
+  * **Success (`200 OK`):**
+    * *Side effect:* Sets an HTTPOnly, SameSite=Lax cookie: `access_token=<JWT_TOKEN>`
+    ```json
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+    ```
+  * **Failure (`400 Bad Request` - e.g., User not found):**
+    ```json
+    {
+      "detail": "user not found"
+    }
+    ```
+  * **Failure (`401 Unauthorized` - Incorrect password):**
+    ```json
+    {
+      "detail": "email or password is incorrect"
+    }
+    ```
+
+### 4. User Profile
+* **Path:** `/profile`
+* **Method:** `GET`
+* **Authentication:** Required (JWT token)
+* **Authentication Methods:**
+  * `Authorization` header (e.g. `Bearer <token>`)
+  * `token` cookie
+  * `token` query parameter (e.g. `?token=<token>`)
+* **Responses:**
+  * **Success (`200 OK`):**
+    ```json
+    {
+      "_id": "667000572e92c2df9e5e7fa8",
+      "name": "John Doe",
+      "email": "johndoe@example.com",
+      "password": "$2b$12$hashedpassword..."
+    }
+    ```
+  * **Failure (`401 Unauthorized` - Invalid or missing token):**
+    ```json
+    {
+      "detail": "Unauthorized token not found"
+    }
+    ```
+
 **Relevant files**
 
 - `main.py` — FastAPI app entrypoint
 - `pyproject.toml` — declared dependencies
 - `utility/connectDb.py` — DB initialization (reads `DB_URL`)
 - `routes/auth.py` — authentication routes
-
-If you want, I can also add a sample `.env.example` file and a one-line Docker command to run MongoDB locally for development.
->>>>>>> 2e4cc4e (improve doucmentaton)
+- `controlar/usercontrolar.py` — authentication controllers/logic
+- `middleware/authorized.py` — route authorization middleware
+- `model/usermodle.py` — User Beanie document model
